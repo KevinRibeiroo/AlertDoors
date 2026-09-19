@@ -13,6 +13,9 @@ artifacts/
 .vscode/
 .codex/
 .agents/
+.superpowers/
+.dotnet-home/
+.cache/
 *.user
 *.suo
 .DS_Store
