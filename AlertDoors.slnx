@@ -3,6 +3,7 @@
     <Project Path="src/AlertDoors/AlertDoors.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/AlertDoors.IntegrationTests/AlertDoors.IntegrationTests.csproj" />
     <Project Path="tests/AlertDoors.Tests/AlertDoors.Tests.csproj" />
   </Folder>
 </Solution>
