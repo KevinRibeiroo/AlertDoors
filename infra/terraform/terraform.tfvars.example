@@ -1,0 +1,11 @@
+# Copy to deployment.tfvars (ignored), then use the intended project ID.
+project_id        = "example-project"
+region            = "us-central1"
+deploy_job        = false
+image_uri         = ""
+job_args          = ["run", "--dry-run"]
+schedules_enabled = false
+discord_enabled   = false
+email_enabled     = false
+# Secret version numbers only. Never put secret values here.
+secret_versions = {}

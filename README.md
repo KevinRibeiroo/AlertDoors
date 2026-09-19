@@ -23,6 +23,8 @@ O acesso às páginas do LinkedIn será validado antes da implementação comple
 - [Desenho da primeira versão](docs/superpowers/specs/2026-09-19-alertdoors-design.md)
 - [Plano de implementação](docs/superpowers/plans/2026-09-19-alertdoors-implementation.md)
 - [Cuidados com credenciais e dados](SECURITY.md)
+- [Implantação e operação no GCP](docs/operations/deployment.md)
+- [Registro de aceite](docs/operations/acceptance.md)
 
 ## Executar e testar
 
