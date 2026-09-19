@@ -1,0 +1,65 @@
+# Build and test output
+**/bin/
+**/obj/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+artifacts/
+
+# Local editor and agent state
+.vs/
+.idea/
+.vscode/
+.codex/
+.agents/
+*.user
+*.suo
+.DS_Store
+Thumbs.db
+
+# Local environment and credentials (examples must contain no real values)
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+credentials/
+**/secrets.json
+**/credentials.json
+**/application_default_credentials.json
+**/*service-account*.json
+**/*service_account*.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+.npmrc
+.netrc
+
+# Infrastructure state, inputs and saved plans can contain secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+*.plan
+crash.log
+crash.*.log
+# Keep .terraform.lock.hcl versioned for reproducible provider versions.
+
+# Runtime data, logs and collected pages
+data/
+logs/
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+.firecrawl/
+Career_Command_Centre/
