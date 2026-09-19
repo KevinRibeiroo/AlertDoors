@@ -23,3 +23,7 @@ dotnet run --project src/AlertDoors -- probe --html artifacts/linkedin/search.ht
 ```
 
 O comando interpreta um arquivo de diagnóstico público com até 2 MiB, sem banco nem envio de notificações. Arquivos obtidos por login ou contendo dados pessoais não devem ser usados como fixtures públicas.
+
+## Coletor .NET e filtros
+
+Uma execução limitada do comando probe também retornou Success, com seis resultados e truncamento explícito. Os filtros rejeitaram resultados fora do perfil ou sem evidência suficiente. Nenhuma notificação foi enviada. A suíte local contém 44 testes aprovados para parser, transporte, paginação e filtros.
