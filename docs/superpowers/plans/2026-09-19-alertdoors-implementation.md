@@ -32,7 +32,7 @@ Detalhes operacionais obrigatórios: um ciclo por processo; uma tarefa Cloud Run
 ## Review Focus
 
 1. HTML de login com HTTP 200 ou formato alterado deve virar erro de coleta, nunca zero vagas silenciosamente — tarefas 1 e 2.
-2. “São Paulo” sem cidade/UF inequívocas, remoto restrito a outro país, títulos com senioridade conflitante e `mid-senior` genérico não devem produzir falso positivo — tarefa 3.
+2. “São Paulo” sem cidade/UF inequívocas, remoto restrito a outro país, cargo fora de desenvolvimento e `mid-senior` genérico não devem produzir falso positivo; título misto “Pleno/Sênior” permanece elegível — tarefa 3.
 3. Disparo duplicado, queda após enviar e expiração da concessão não podem apagar pendências nem repetir entregas já confirmadas — tarefas 4 e 6.
 4. Uma falha na segunda mensagem de um resumo, títulos longos e conteúdo com HTML ou menções devem preservar o progresso e a integridade da notificação — tarefas 5 e 6.
 5. Vaga sem data publicada e backlog maior que 20 precisam ter estado explícito; limite de resumo não equivale a entrega, e dados ausentes não podem ser inventados — tarefas 2, 4 e 6.
@@ -280,9 +280,9 @@ public void RequiresEvidenceForTargetSeniority(string title, MatchDecision expec
 }
 ```
 
-- [ ] Testar São Paulo cidade versus Campinas/Osasco/São Paulo estado; remoto Brasil versus remoto restrito aos EUA; `Unknown` para modalidade ou país remoto ausentes. Incluir título misto “Júnior / Sênior” como indeterminado, e título explicitamente pleno com categoria genérica `mid-senior` como aceito se as demais evidências não conflitarem.
+- [ ] Testar São Paulo cidade versus Campinas/Osasco/São Paulo estado; remoto Brasil versus remoto restrito aos EUA; `Unknown` para modalidade ou país remoto ausentes. Incluir títulos mistos “Júnior / Sênior” e “Pleno / Sênior” como elegíveis quando não houver outro conflito, e título explicitamente pleno com categoria genérica `mid-senior` como aceito se as demais evidências não conflitarem.
 - [ ] Executar `dotnet test tests/AlertDoors.Tests --filter FullyQualifiedName~FilterTests` e confirmar falhas antes da implementação.
-- [ ] Normalizar caixa, espaços e acentos para comparação; manter texto original para apresentação. Usar tokens ou expressões com limites de palavra para senioridade, evitando encontrar `pl` em palavras como “aplicação”. Exigir tecnologia no título ou descrição com tokens `.NET`, `ASP.NET`, `dotnet` ou `C#`, nunca uma substring genérica como `net` em “internet”.
+- [ ] Normalizar caixa, espaços e acentos para comparação; manter texto original para apresentação. Usar tokens ou expressões com limites de palavra para senioridade, evitando encontrar `pl` em palavras como “aplicação”. Exigir tecnologia no título ou descrição com tokens `.NET`, `ASP.NET`, `dotnet` ou `C#`, nunca uma substring genérica como `net` em “internet”. Exigir também cargo singular de desenvolvedor/developer ou engenheiro de software/software engineer no título ou descrição, sem aceitar menção genérica à equipe de desenvolvedores.
 - [ ] Definir precedência: exclusão inequívoca de local/modalidade/nível retorna `Exclude`; conflito de evidência retorna `Unknown`; falta de evidência retorna `Unknown`; todos os requisitos satisfeitos retornam `Include`. Registrar `Reason` estável, por exemplo `seniority_missing`, `outside_city`, `remote_country_missing` ou `matched`.
 - [ ] Reexecutar testes; examinar os resultados filtrados do diagnóstico com contagens por motivo. Revisar/commitar a entrega.
 

@@ -13,12 +13,15 @@ public sealed class JobFilter
         var location = LinkedInDetailParser.Normalize(job.Location).Trim();
         if (!Regex.IsMatch(title + " " + description, @"(?<!\w)(?:\.?asp\.net|\.net|dotnet|c#)(?!\w)"))
             return new(MatchDecision.Exclude, "technology_mismatch");
+        if (!Regex.IsMatch(title + " " + description, @"(?<!\w)(?:desenvolvedor(?:a|\(a\))?|developer|engenheir[oa]\s+de\s+software|software\s+engineer)(?!\w)"))
+            return new(MatchDecision.Exclude, "role_mismatch");
         var wanted = Regex.IsMatch(title, @"\b(junior|jr|pleno|pl|mid[ -]level)\b");
-        var excluded = Regex.IsMatch(title, @"\b(senior|sr|lead|lider|diretor|director|manager|gerente|estagio|estagiario|intern|principal|staff)\b");
+        var seniorTitle = Regex.IsMatch(title, @"\b(senior|sr)\b");
+        var excludedRole = Regex.IsMatch(title, @"\b(lead|lider|diretor|director|manager|gerente|estagio|estagiario|intern|principal|staff)\b");
         var explicitLevelExclusion = Regex.IsMatch(level, @"\b(director|executive|manager|internship|estagio)\b")
-            || (Regex.IsMatch(level, @"\b(senior|sr)\b") && !level.Contains("mid-senior"));
-        if (wanted && (excluded || explicitLevelExclusion)) return new(MatchDecision.Unknown, "seniority_conflict");
-        if (excluded || explicitLevelExclusion) return new(MatchDecision.Exclude, "seniority_excluded");
+            || (Regex.IsMatch(level, @"\b(senior|sr)\b") && !level.Contains("mid-senior") && !(wanted && seniorTitle));
+        if (wanted && (excludedRole || explicitLevelExclusion)) return new(MatchDecision.Unknown, "seniority_conflict");
+        if (!wanted && (seniorTitle || excludedRole || explicitLevelExclusion)) return new(MatchDecision.Exclude, "seniority_excluded");
         if (!wanted && !Regex.IsMatch(level, @"\b(junior|pleno|mid[ -]level)\b")) return new(MatchDecision.Unknown, "seniority_missing");
         if (job.Mode == WorkMode.Unknown) return new(MatchDecision.Unknown, "work_mode_missing");
         if (job.Mode == WorkMode.Remote)

@@ -59,7 +59,7 @@ As variáveis estão listadas em [.env.example](.env.example). O arquivo é um e
 - E-mail: `EMAIL_ENABLED=true`, host/porta, remetente/destinatário e credenciais SMTP quando exigidas pelo provedor. Porta 465 usa TLS imediato; outras portas usam STARTTLS obrigatório.
 - Produção usa `ALERTDOORS_MODE=Production` e a identidade do serviço GCP. Não aceita `FIRESTORE_EMULATOR_HOST`.
 - Desenvolvimento usa `ALERTDOORS_MODE=Development` e exige `FIRESTORE_EMULATOR_HOST`. SMTP sem TLS só é permitido explicitamente para localhost nesse modo.
-- Os filtros iniciais são júnior/pleno, remoto Brasil ou híbrido/presencial São Paulo–SP. Campos ausentes ou conflitantes são indeterminados; nenhum campo é inferido só pelo filtro da pesquisa.
+- O filtro exige `.NET`, `ASP.NET`, `dotnet` ou `C#` e um cargo de desenvolvedor/developer ou engenheiro de software/software engineer no título ou na descrição. Aceita júnior/pleno, inclusive títulos mistos como “Pleno/Sênior”; sênior isolado, liderança e estágio não são elegíveis. Remoto exige Brasil; híbrido/presencial exige a cidade de São Paulo–SP. Campos ausentes ou conflitantes são indeterminados; nenhum campo é inferido só pelo filtro da pesquisa.
 
 ```powershell
 dotnet run --project src/AlertDoors -- run

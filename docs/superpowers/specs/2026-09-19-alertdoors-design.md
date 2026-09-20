@@ -69,7 +69,7 @@ Referências consultadas em 19/09/2026:
 1. Ao receber um disparo, validar configuração, identificar a janela de execução e adquirir a concessão no Firestore antes de consultar a fonte.
 2. Consultar separadamente vagas remotas no Brasil e vagas presenciais/híbridas na cidade de São Paulo. Buscar variações de .NET, C# e ASP.NET.
 3. Normalizar os resultados: ID da fonte, URL canônica, título, empresa, local, modalidade, senioridade e data de publicação, quando disponíveis.
-4. Aplicar os filtros. Usar senioridade explícita no título ou nos dados disponíveis; não equiparar automaticamente a categoria ampla “mid-senior” a pleno. Excluir sênior, liderança e estágio explícitos. Se faltar evidência suficiente de senioridade, localização ou modalidade, contabilizar o resultado como indeterminado e não enviar como correspondência confirmada.
+4. Aplicar os filtros. Exigir tecnologia .NET/C#/ASP.NET e cargo de desenvolvedor ou engenheiro de software no título ou na descrição. Usar senioridade explícita no título ou nos dados disponíveis; não equiparar automaticamente a categoria ampla “mid-senior” a pleno. Aceitar títulos mistos como “Pleno/Sênior” quando incluírem júnior/pleno; excluir sênior isolado, liderança e estágio explícitos. Se faltar evidência suficiente de senioridade, localização ou modalidade, contabilizar o resultado como indeterminado e não enviar como correspondência confirmada.
 5. Registrar vagas e entregas pendentes no Firestore antes do envio.
 6. Enviar um resumo por canal habilitado com título, empresa, localização/modalidade e link. Incluir salário e data apenas quando fornecidos pela fonte.
 7. Registrar sucesso individual por canal. Falha no e-mail não deve repetir um envio já confirmado no Discord.
@@ -81,7 +81,7 @@ Na primeira execução, usar resultados das últimas 24 horas, quando a fonte of
 
 - **Coordenador:** executa um ciclo, controla janelas e concessões de execução e respeita cancelamento e timeout. O agendamento pertence à infraestrutura.
 - **Fonte LinkedIn:** consultas, paginação limitada, interpretação dos dados e diagnóstico de falhas.
-- **Filtro:** regras testáveis de tecnologia, senioridade, local e modalidade.
+- **Filtro:** regras testáveis de tecnologia, cargo, senioridade, local e modalidade.
 - **Repositório Firestore:** vagas observadas, estado de entrega por vaga/canal e concessão de execução, persistentes entre containers.
 - **Notificador Discord:** webhook vindo da configuração de segredos, limites de tamanho e menções desativadas para conteúdo coletado.
 - **Notificador de e-mail:** SMTP com TLS e conteúdo escapado; destinatário configurável e credenciais vindas da configuração de segredos.
@@ -99,7 +99,7 @@ Na primeira execução, usar resultados das últimas 24 horas, quando a fonte of
 
 ## Validação e entrega
 
-- Testes de filtros: júnior/pleno, exclusão de sênior, cidade de São Paulo, remoto Brasil e campos ausentes.
+- Testes de filtros: cargo, júnior/pleno, título misto com sênior, exclusão de sênior isolado, cidade de São Paulo, remoto Brasil e campos ausentes.
 - Testes de interpretação do HTML com exemplos locais, inclusive páginas de bloqueio.
 - Testes de persistência e entregas independentes por canal, incluindo falha e reinício.
 - Verificar os agendamentos por pelo menos 48 horas simuladas, inclusive a virada de dia, confirmando intervalos de 40 minutos.

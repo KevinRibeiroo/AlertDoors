@@ -5,7 +5,7 @@ Registro atualizado em 20/09/2026. O projeto GCP está em `southamerica-east1`; 
 | Verificação | Resultado | Evidência |
 | --- | --- | --- |
 | Coleta pública local limitada | PASS | Pesquisa e detalhe HTTP 200; parser extraiu dados reais. Ver `linkedin-feasibility.md`. |
-| Filtros, parser, transporte, mensagens e configuração | PASS | 60 testes unitários, incluindo identificação do cliente HTTP no envio ao Discord. |
+| Filtros, parser, transporte, mensagens e configuração | PASS | 69 testes unitários, incluindo cargo no título/descrição, senioridade mista e identificação do cliente HTTP no envio ao Discord. |
 | Persistência, concorrência, retomada e SMTP | PASS | 7 testes com Firestore Emulator e Mailpit locais. |
 | Intervalos dos agendamentos | PASS | 72 horários em 48 horas simuladas, todos com intervalo de 40 minutos. |
 | Imagem Linux | PASS | Build linux/amd64, usuário 1654; demo retorna 0; execução sem configuração retorna 2. |

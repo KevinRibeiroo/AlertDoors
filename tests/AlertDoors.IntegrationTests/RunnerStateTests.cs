@@ -15,7 +15,7 @@ public class RunnerStateTests
         var db = new FirestoreDbBuilder { ProjectId = "alertdoors-test", EmulatorDetection = EmulatorDetection.EmulatorOnly }.Build();
         store = new(db, clock, "runner_" + Guid.NewGuid().ToString("N"));
     }
-    private static JobPosting Job(int id) => new($"linkedin:{id}", new($"https://www.linkedin.com/jobs/view/{id}/"), ".NET Pleno", "Exemplo", "São Paulo, SP", "BR", WorkMode.Hybrid, null, null, DateTimeOffset.UtcNow, "");
+    private static JobPosting Job(int id) => new($"linkedin:{id}", new($"https://www.linkedin.com/jobs/view/{id}/"), "Desenvolvedor .NET Pleno", "Exemplo", "São Paulo, SP", "BR", WorkMode.Hybrid, null, null, DateTimeOffset.UtcNow, "");
     [Fact]
     public async Task FailedSecondMessageDoesNotRepeatConfirmedMessageOrOtherChannel()
     {
