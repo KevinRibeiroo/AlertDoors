@@ -3,23 +3,17 @@ namespace AlertDoors.Tests;
 public class ScheduleTests
 {
     [Fact]
-    public void TerraformSchedulesKeepFortyMinuteGapsAcrossMidnight()
+    public void TerraformScheduleRunsHourlyAcrossMidnight()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "AlertDoors.slnx"))) directory = directory.Parent;
         Assert.NotNull(directory);
         var text = File.ReadAllText(Path.Combine(directory.FullName, "infra/terraform/scheduler.tf"));
-        var expressions = Regex.Matches(text, "\"(?:even|odd)\"\\s*=\\s*\"([^\"]+)\"").Select(m => m.Groups[1].Value).ToArray();
-        Assert.Equal(2, expressions.Length);
+        var expressions = Regex.Matches(text, "\"hourly\"\\s*=\\s*\"([^\"]+)\"").Select(m => m.Groups[1].Value).ToArray();
+        Assert.Single(expressions);
         var starts = Enumerable.Range(0, 48 * 60).Where(m => expressions.Any(e => Matches(e, m))).ToArray();
-        Assert.Equal(72, starts.Length);
-        for (var i = 1; i < starts.Length; i++) Assert.Equal(40, starts[i] - starts[i - 1]);
-    }
-    [Fact]
-    public void MinuteStepAloneDoesNotMeanFortyMinuteIntervals()
-    {
-        var starts = Enumerable.Range(0, 120).Where(m => Matches("*/40 * * * *", m)).ToArray();
-        Assert.Equal(new[] { 0, 40, 60, 100 }, starts);
+        Assert.Equal(48, starts.Length);
+        for (var i = 1; i < starts.Length; i++) Assert.Equal(60, starts[i] - starts[i - 1]);
     }
     private static bool Matches(string expression, int minute)
     {

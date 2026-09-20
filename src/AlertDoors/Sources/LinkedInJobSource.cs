@@ -1,6 +1,6 @@
 using AlertDoors.Jobs;
 namespace AlertDoors.Sources;
-public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock, int maxDetails = 20) : IJobSource
+public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock, int maxDetails = 36) : IJobSource
 {
     private readonly Dictionary<string, JobPosting> details = [];
     private int detailRequests;
@@ -15,7 +15,7 @@ public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock
         DateTimeOffset? retryAt = null;
         var truncated = false;
         var start = 0;
-        for (var page = 0; page < Math.Clamp(request.MaxPages, 1, 2); page++)
+        for (var page = 0; page < Math.Clamp(request.MaxPages, 1, 3); page++)
         {
             var response = await http.GetAsync(LinkedInQueryBuilder.Build(request, start), ct);
             if (response.Status != SourceStatus.Success) { status = response.Status; retryAt = response.RetryAt; break; }
@@ -26,7 +26,7 @@ public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock
             if (parsed.Jobs.Count == 0) break;
             if (added == 0) { truncated = true; break; }
             start += parsed.Jobs.Count;
-            if (page == Math.Clamp(request.MaxPages, 1, 2) - 1) truncated = true;
+            if (page == Math.Clamp(request.MaxPages, 1, 3) - 1) truncated = true;
         }
         foreach (var job in found.Values.OrderByDescending(j => System.Text.RegularExpressions.Regex.IsMatch(j.Title, @"(?i)\b(j[uú]nior|jr|pleno|pl|mid.level)\b")).ToArray())
         {

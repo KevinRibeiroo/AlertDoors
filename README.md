@@ -8,7 +8,7 @@ Bot para buscar vagas de desenvolvimento .NET e enviar novidades por Discord e/o
 
 - LinkedIn como fonte inicial, com coleta experimental sujeita a validação real.
 - Vagas júnior e pleno; remoto no Brasil e presencial/híbrido na cidade de São Paulo–SP.
-- Consultas programadas a cada 40 minutos.
+- Consultas programadas a cada hora.
 - Histórico persistente para evitar repetir notificações já confirmadas.
 - Notificações por Discord, e-mail ou ambos, conforme configuração.
 
@@ -59,10 +59,11 @@ As variáveis estão listadas em [.env.example](.env.example). O arquivo é um e
 - E-mail: `EMAIL_ENABLED=true`, host/porta, remetente/destinatário e credenciais SMTP quando exigidas pelo provedor. Porta 465 usa TLS imediato; outras portas usam STARTTLS obrigatório.
 - Produção usa `ALERTDOORS_MODE=Production` e a identidade do serviço GCP. Não aceita `FIRESTORE_EMULATOR_HOST`.
 - Desenvolvimento usa `ALERTDOORS_MODE=Development` e exige `FIRESTORE_EMULATOR_HOST`. SMTP sem TLS só é permitido explicitamente para localhost nesse modo.
-- O filtro exige `.NET`, `ASP.NET`, `dotnet` ou `C#` e um cargo de desenvolvedor/developer ou engenheiro de software/software engineer no título ou na descrição. Aceita júnior/pleno, inclusive títulos mistos como “Pleno/Sênior”; sênior isolado, liderança e estágio não são elegíveis. Remoto exige Brasil; híbrido/presencial exige a cidade de São Paulo–SP. Campos ausentes ou conflitantes são indeterminados; nenhum campo é inferido só pelo filtro da pesquisa.
+- O filtro exige `.NET`, `ASP.NET`, `dotnet` ou `C#` no título ou na descrição; outras stacks como Angular e React são permitidas. Aceita desenvolvedor/developer, programador, engenheiro de software e analista de sistemas voltado a desenvolvimento. Também aceita “analista .NET” e “engenheiro .NET” no título. A senioridade júnior/pleno é preferida; quando não é identificável, a vaga gera alerta com aviso para confirmar. Sênior isolado, liderança e estágio explícitos continuam fora. Remoto exige Brasil; híbrido/presencial exige a cidade de São Paulo–SP. Uma vaga sem modalidade identificável pode gerar alerta quando há evidência de localização no Brasil, com aviso para confirmar a modalidade. Localização ausente ou conflitante continua sem alerta.
+- Cada ciclo consulta até três páginas por combinação de termo e modalidade e até 36 detalhes, respeitando o orçamento de coleta de seis minutos. Resultados podem continuar parciais; `Truncated` sinaliza o limite.
 
 ```powershell
 dotnet run --project src/AlertDoors -- run
 ```
 
-Cada processo faz um ciclo e termina. O intervalo de 40 minutos pertence ao Cloud Scheduler. Retornos: `0` sucesso/execução duplicada ignorada; `2` configuração; `3` bloqueio/limitação da fonte; `4` outra falha de coleta; `5` persistência/notificação; `130` cancelamento. Entregas confirmadas ficam no Firestore; falhas continuam pendentes. Uma queda entre envio e confirmação no banco ainda pode causar uma duplicata.
+Cada processo faz um ciclo e termina. O agendamento horário pertence ao Cloud Scheduler. Retornos: `0` sucesso/execução duplicada ignorada; `2` configuração; `3` bloqueio/limitação da fonte; `4` outra falha de coleta; `5` persistência/notificação; `130` cancelamento. Entregas confirmadas ficam no Firestore; falhas continuam pendentes. Uma queda entre envio e confirmação no banco ainda pode causar uma duplicata.

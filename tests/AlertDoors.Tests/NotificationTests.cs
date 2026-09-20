@@ -6,6 +6,14 @@ public class NotificationTests
 {
     private static readonly Uri FakeWebhook = new("https://discord.com/api/webhooks/123/fictional-test-value");
     [Fact]
+    public void MarksUnknownSeniorityAndModeInAlert()
+    {
+        var job = FilterTests.Sample("Programador .NET") with { Mode = AlertDoors.Jobs.WorkMode.Unknown };
+        var batch = Assert.Single(MessageFormatter.Prepare(Channel.Discord, [job]));
+        Assert.Contains("Modalidade a confirmar", batch.Body);
+        Assert.Contains("Senioridade a confirmar", batch.Body);
+    }
+    [Fact]
     public void SplitsLongSummariesWithoutDroppingJobsOrLinks()
     {
         using var client = new HttpClient();

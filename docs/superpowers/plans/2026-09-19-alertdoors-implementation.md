@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Entregar um bot .NET que encontre vagas júnior e pleno no LinkedIn, remotas no Brasil ou presenciais/híbridas na cidade de São Paulo, e notifique novidades por Discord e/ou e-mail a cada 40 minutos no GCP.
+**Goal:** Entregar um bot .NET que encontre vagas júnior e pleno, além de vagas com senioridade não informada, no LinkedIn, remotas no Brasil ou presenciais/híbridas na cidade de São Paulo, e notifique novidades por Discord e/ou e-mail a cada hora no GCP.
 
 **Architecture:** Um container Linux executa um ciclo de coleta, filtragem, persistência e notificação como Cloud Run Job. Cloud Scheduler dispara o job; Firestore mantém vagas, entregas e a concessão de execução; Secret Manager fornece credenciais. O coletor do LinkedIn é uma integração experimental cuja viabilidade será validada antes de investir no restante da implementação.
 
@@ -19,7 +19,7 @@ Requisitos transcritos do desenho; valem para todas as tarefas:
 - Senioridade: júnior e pleno.
 - Modalidades: remoto; presencial e híbrido em São Paulo–SP.
 - Fonte inicial: LinkedIn.
-- Intervalo: 40 minutos.
+- Intervalo: 1 hora.
 - C# com .NET 10, disponível no ambiente. Sem painel web nesta versão.
 - Remoto: vagas destinadas ao Brasil. São Paulo–SP significa a cidade, não todo o estado.
 - Não contornar CAPTCHA, login ou bloqueios com proxies ou cookies de contas.
@@ -27,12 +27,12 @@ Requisitos transcritos do desenho; valem para todas as tarefas:
 - Falha no e-mail não deve repetir um envio já confirmado no Discord.
 - Não prometer entrega exatamente uma vez.
 
-Detalhes operacionais obrigatórios: um ciclo por processo; uma tarefa Cloud Run por execução; timeout de 10 minutos; concessão de 15 minutos; 1 vCPU e 512 MiB iniciais; agendamentos UTC `0,40 0-23/2 * * *` e `20 1-23/2 * * *`. Não há candidatura automática, painel, bot de chat, análise por IA ou contratação de fornecedor de vagas nesta versão.
+Detalhes operacionais obrigatórios: um ciclo por processo; uma tarefa Cloud Run por execução; timeout de 10 minutos; concessão de 15 minutos; 1 vCPU e 512 MiB iniciais; agendamento UTC `0 * * * *`. Não há candidatura automática, painel, bot de chat, análise por IA ou contratação de fornecedor de vagas nesta versão.
 
 ## Review Focus
 
 1. HTML de login com HTTP 200 ou formato alterado deve virar erro de coleta, nunca zero vagas silenciosamente — tarefas 1 e 2.
-2. “São Paulo” sem cidade/UF inequívocas, remoto restrito a outro país, cargo fora de desenvolvimento e `mid-senior` genérico não devem produzir falso positivo; título misto “Pleno/Sênior” permanece elegível — tarefa 3.
+2. “São Paulo” sem cidade/UF inequívocas em vagas presenciais/híbridas, remoto restrito a outro país e cargo fora de desenvolvimento não devem produzir falso positivo. `mid-senior` genérico gera alerta com senioridade a confirmar; título misto “Pleno/Sênior” permanece elegível — tarefa 3.
 3. Disparo duplicado, queda após enviar e expiração da concessão não podem apagar pendências nem repetir entregas já confirmadas — tarefas 4 e 6.
 4. Uma falha na segunda mensagem de um resumo, títulos longos e conteúdo com HTML ou menções devem preservar o progresso e a integridade da notificação — tarefas 5 e 6.
 5. Vaga sem data publicada e backlog maior que 20 precisam ter estado explícito; limite de resumo não equivale a entrega, e dados ausentes não podem ser inventados — tarefas 2, 4 e 6.
@@ -246,7 +246,7 @@ public void QueryPreservesCSharpInsteadOfCreatingAFragment()
 
 - [ ] Executar `dotnet test tests/AlertDoors.Tests --filter FullyQualifiedName~SourceTests` e confirmar os novos casos falhando.
 - [ ] Gerar a query com `Uri.EscapeDataString` por valor. Consultar três termos (`.NET`, `C#`, `ASP.NET`) em três escopos (remoto Brasil, híbrido São Paulo, presencial São Paulo), deduplicando IDs entre consultas. Filtros oferecidos pela fonte reduzem candidatos; a decisão final pertence à tarefa 3. Só usar parâmetros de modalidade/data que a prova tenha verificado.
-- [ ] Implementar no máximo 2 páginas por consulta e 20 detalhes por ciclo, com orçamento total de coleta de 6 minutos e pausa de 1 segundo entre requisições. Detalhes devem priorizar candidatos que já tenham evidência de tecnologia e senioridade. Parar em página repetida ou final explícito. Um conjunto parcial com falha deve preservar vagas já interpretadas e retornar status não bem-sucedido.
+- [ ] Implementar no máximo 3 páginas por consulta e 36 detalhes por ciclo, com orçamento total de coleta de 6 minutos e pausa de 1 segundo entre requisições. Detalhes devem priorizar candidatos que já tenham evidência de tecnologia e senioridade. Parar em página repetida ou final explícito. Um conjunto parcial com falha deve preservar vagas já interpretadas e retornar status não bem-sucedido.
 - [ ] Permitir no máximo 3 tentativas em erros transitórios, com pausas de 2 e 4 segundos. Para 429, respeitar `Retry-After` válido; se a espera exceder o orçamento restante, retornar `RateLimited` com `RetryAt`, sem nova requisição antecipada. Sem cabeçalho utilizável, encerrar o ciclo com limitação explícita. Não repetir 401/403/CAPTCHA. Restringir redirecionamentos aos hosts LinkedIn permitidos e classificar login como bloqueio.
 - [ ] Consultar as últimas 24 horas em todos os ciclos quando o filtro da fonte funcionar; caso não funcione, coletar com orçamento limitado e aplicar data quando conhecida. Data desconhecida deve ser mostrada como “publicação não informada”, sem classificar a vaga como recém-publicada. Uma vaga antiga conhecida e anterior à janela não entra na fila inicial.
 - [ ] Reexecutar os testes. Fazer uma única consulta real de diagnóstico, sem notificações, e registrar contagens e truncamento. Revisar/commitar os arquivos desta tarefa.
@@ -273,17 +273,17 @@ public static JobPosting Create(string title) => new(
 [InlineData("Desenvolvedor .NET Júnior", MatchDecision.Include)]
 [InlineData("Desenvolvedor C# Pleno", MatchDecision.Include)]
 [InlineData("Desenvolvedor .NET Sênior", MatchDecision.Exclude)]
-[InlineData("Desenvolvedor .NET", MatchDecision.Unknown)]
+[InlineData("Desenvolvedor .NET", MatchDecision.Include)]
 public void RequiresEvidenceForTargetSeniority(string title, MatchDecision expected)
 {
     Assert.Equal(expected, new JobFilter().Evaluate(JobSamples.Create(title)).Decision);
 }
 ```
 
-- [ ] Testar São Paulo cidade versus Campinas/Osasco/São Paulo estado; remoto Brasil versus remoto restrito aos EUA; `Unknown` para modalidade ou país remoto ausentes. Incluir títulos mistos “Júnior / Sênior” e “Pleno / Sênior” como elegíveis quando não houver outro conflito, e título explicitamente pleno com categoria genérica `mid-senior` como aceito se as demais evidências não conflitarem.
+- [ ] Testar São Paulo cidade versus Campinas/Osasco/São Paulo estado; remoto Brasil versus remoto restrito aos EUA; alerta com modalidade ou senioridade não identificável quando o cargo, a tecnologia e a localização forem compatíveis; `Unknown` para país/localização sem evidência. Incluir títulos mistos “Júnior / Sênior” e “Pleno / Sênior” como elegíveis quando não houver outro conflito, e categoria genérica `mid-senior` como alerta com senioridade a confirmar.
 - [ ] Executar `dotnet test tests/AlertDoors.Tests --filter FullyQualifiedName~FilterTests` e confirmar falhas antes da implementação.
-- [ ] Normalizar caixa, espaços e acentos para comparação; manter texto original para apresentação. Usar tokens ou expressões com limites de palavra para senioridade, evitando encontrar `pl` em palavras como “aplicação”. Exigir tecnologia no título ou descrição com tokens `.NET`, `ASP.NET`, `dotnet` ou `C#`, nunca uma substring genérica como `net` em “internet”. Exigir também cargo singular de desenvolvedor/developer ou engenheiro de software/software engineer no título ou descrição, sem aceitar menção genérica à equipe de desenvolvedores.
-- [ ] Definir precedência: exclusão inequívoca de local/modalidade/nível retorna `Exclude`; conflito de evidência retorna `Unknown`; falta de evidência retorna `Unknown`; todos os requisitos satisfeitos retornam `Include`. Registrar `Reason` estável, por exemplo `seniority_missing`, `outside_city`, `remote_country_missing` ou `matched`.
+- [ ] Normalizar caixa, espaços e acentos para comparação; manter texto original para apresentação. Usar tokens ou expressões com limites de palavra para senioridade, evitando encontrar `pl` em palavras como “aplicação”. Exigir tecnologia no título ou descrição com tokens `.NET`, `ASP.NET`, `dotnet` ou `C#`, nunca uma substring genérica como `net` em “internet”. Aceitar desenvolvedor/developer e engenheiro de software/software engineer no título ou descrição; programador e analista de sistemas/desenvolvimento no título; e “analista .NET” ou “engenheiro .NET” no título. Outras stacks na mesma vaga são permitidas. Senioridade ou modalidade ausente gera alerta identificado para confirmação, desde que a localização tenha evidência suficiente.
+- [ ] Definir precedência: exclusão inequívoca de local/nível retorna `Exclude`; conflito de evidência retorna `Unknown`; ausência apenas de senioridade ou modalidade retorna `Include` com aviso de confirmação; falta de evidência de localização retorna `Unknown`. Registrar `Reason` estável, por exemplo `outside_city`, `remote_country_missing` ou `matched_mode_unverified`.
 - [ ] Reexecutar testes; examinar os resultados filtrados do diagnóstico com contagens por motivo. Revisar/commitar a entrega.
 
 **Aceite:** nenhum campo de preferência é inferido apenas porque a consulta do LinkedIn usou determinado filtro.
@@ -370,7 +370,7 @@ return DateTimeOffset.FromUnixTimeSeconds(start).UtcDateTime
 
 No runner: adquirir concessão; coletar as nove combinações limitadas da tarefa 2; filtrar; persistir aprovadas antes de enviar; buscar até 20 pendências por canal; preparar lotes; validar concessão; enviar e confirmar cada lote sequencialmente; finalizar com sucesso somente se coleta e canais terminarem sem erro. Capturar falha de um canal para continuar o outro. Usar orçamento interno de 9 minutos, deixando margem ao timeout Cloud Run. Cancelamento e finalização devem usar operações limitadas; não iniciar envio após perder a concessão. Chamar `EnsureLeaseAsync` imediatamente antes de cada envio; não se apoiar somente no objeto antigo em memória. Essa verificação não torna um envio externo transacional: uma queda após o destino aceitar ainda pode causar duplicata, conforme a limitação do desenho.
 
-- [ ] Disponibilizar comandos: `probe` (inspeção real limitada), `run --dry-run` (coleta e filtros reais, sem banco e sem envio), `demo` (dados sintéticos e saída marcada como demonstração, sem efeitos externos), `run` (ciclo real com estado e notificadores). Nenhum deles inicia loop de espera de 40 minutos.
+- [ ] Disponibilizar comandos: `probe` (inspeção real limitada), `run --dry-run` (coleta e filtros reais, sem banco e sem envio), `demo` (dados sintéticos e saída marcada como demonstração, sem efeitos externos), `run` (ciclo real com estado e notificadores). Nenhum deles inicia loop de espera de uma hora.
 - [ ] Validar configuração antes de usar rede: projeto Firestore presente em produção; pelo menos um canal habilitado no modo real; webhook HTTPS válido se Discord habilitado; host, porta, TLS, remetente e destinatário válidos se e-mail habilitado. Desabilitar ambos por padrão. Variáveis previstas: `GOOGLE_CLOUD_PROJECT`, `ALERTDOORS_MODE`, `DISCORD_ENABLED`, `DISCORD_WEBHOOK_URL`, `EMAIL_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`, `EMAIL_TO`. `.env.example` lista nomes, valores não secretos e instruções locais; `.env` não é carregado automaticamente sem suporte implementado e documentado.
 - [ ] Logs JSON devem conter `runId`, `windowId`, estágio, duração, contagens e motivo de falha. Nunca registrar webhook, senha, cabeçalho Authorization, corpo de e-mail ou exceção de HTTP contendo URL secreta. Usar categorias e mensagens sanitizadas. Códigos de saída: 0 sucesso ou execução duplicada ignorada; 2 configuração; 3 fonte bloqueada/limitada; 4 outra falha de fonte; 5 persistência/envio; 130 cancelamento. O processo deve aguardar todo o ciclo antes de terminar.
 - [ ] Executar `dotnet test AlertDoors.slnx`, com emuladores disponíveis, e `dotnet run --project src/AlertDoors -- demo`. Executar `run --dry-run` uma vez e conferir resultados reais sem afirmar que houve envio. Revisar/commitar.
@@ -383,7 +383,7 @@ No runner: adquirir concessão; coletar as nove combinações limitadas da taref
 
 **Interfaces:** imagem executa `dotnet AlertDoors.dll run` por padrão; aceita `probe`, `demo` e `run --dry-run` como argumentos. Terraform recebe `project_id`, `region`, `image_uri`, IDs/versões de segredos e opções não secretas; não recebe valores secretos. `schedules_enabled` começa `false`; habilitação é a última mudança da tarefa 8.
 
-- [ ] Testar o agendamento por 48 horas, incluindo virada do dia. A verificação deve ler as duas expressões de `infra/terraform/scheduler.tf`, para detectar divergência da infraestrutura, e aceitar apenas os cinco campos e listas/passos usados pelo projeto. Esperar 72 horários e diferença de 40 minutos entre todos eles. Validar que a expressão única `*/40 * * * *` é rejeitada pelo critério de intervalo. Executar com `dotnet test tests/AlertDoors.Tests --filter FullyQualifiedName~ScheduleTests`.
+- [ ] Testar o agendamento por 48 horas, incluindo virada do dia. A verificação deve ler a expressão de `infra/terraform/scheduler.tf`, para detectar divergência da infraestrutura, e aceitar apenas os cinco campos e listas/passos usados pelo projeto. Esperar 48 horários e diferença de 60 minutos entre todos eles. Executar com `dotnet test tests/AlertDoors.Tests --filter FullyQualifiedName~ScheduleTests`.
 - [ ] Criar o Dockerfile multi-stage abaixo; adicionar cópia de arquivos de lock junto ao restante da solução e ajustar contexto conforme necessário. A imagem final contém somente o publish. Fixar digests após validar a imagem na implementação:
 
 ```dockerfile
@@ -435,7 +435,7 @@ CMD ["run"]
 - [ ] `dotnet restore AlertDoors.slnx --locked-mode` e `dotnet build AlertDoors.slnx -c Release --no-restore` passam.
 - [ ] Unitários e integração com emuladores passam; registrar testes que não puderam ser executados.
 - [ ] Imagem Linux executa e retorna os códigos de saída esperados.
-- [ ] A infraestrutura passa por formatação e validação; os dois horários produzem intervalos de 40 minutos por 48 horas simuladas.
+- [ ] A infraestrutura passa por formatação e validação; o horário produz intervalos de 60 minutos por 48 horas simuladas.
 - [ ] Coleta real foi distinguida de demonstração, bloqueio e resultado vazio válido.
 - [ ] Nenhum segredo ou dado de autenticação está no diff, logs, contexto Docker ou estado Terraform versionado.
 - [ ] No GCP, confirmar resultado do job, entrega real e deduplicação, ou declarar precisamente por que ainda não foi possível ativar.

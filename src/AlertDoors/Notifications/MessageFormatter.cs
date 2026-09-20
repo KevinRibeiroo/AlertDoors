@@ -22,7 +22,10 @@ public static class MessageFormatter
             {
                 title = EscapeMarkdown(title); company = EscapeMarkdown(company); location = EscapeMarkdown(location);
             }
-            var entry = $"{title}\n{company} | {location} | {job.Mode}\n{job.Url.AbsoluteUri}\n";
+            var mode = job.Mode == WorkMode.Unknown ? "Modalidade a confirmar" : job.Mode.ToString();
+            var entry = $"{title}\n{company} | {location} | {mode}\n{job.Url.AbsoluteUri}\n";
+            if (!Regex.IsMatch(LinkedInDetailParser.Normalize(job.Title + " " + job.SeniorityText), @"\b(junior|jr|pleno|pl|mid[ -]level)\b"))
+                entry += "Senioridade a confirmar\n";
             if (job.PublishedAt is null) entry += "Publicação não informada\n";
             if (entry.Length > limit) throw new InvalidOperationException("Notification entry exceeds channel limit.");
             if (body.Length + entry.Length + 1 > limit || current.Count == 20) Flush();

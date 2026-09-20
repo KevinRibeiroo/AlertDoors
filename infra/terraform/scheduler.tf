@@ -1,7 +1,6 @@
 locals {
   schedules = {
-    "even" = "0,40 0-23/2 * * *"
-    "odd"  = "20 1-23/2 * * *"
+    "hourly" = "0 * * * *"
   }
 }
 resource "google_cloud_scheduler_job" "bot" {

@@ -35,7 +35,7 @@ try
     // Validate before constructing anything that can access production services.
     var options = args is ["run"] ? OptionsValidator.Load(Environment.GetEnvironmentVariable) : null;
     using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(30) };
-    var source = new LinkedInJobSource(new(http, clock), clock, args is ["probe"] ? 2 : 20);
+    var source = new LinkedInJobSource(new(http, clock), clock, args is ["probe"] ? 2 : 36);
     if (options is null)
     {
         var requests = args is ["probe"] ? BotRunner.Requests(clock.GetUtcNow()).Take(1).Select(r => r with { MaxPages = 1 }) : BotRunner.Requests(clock.GetUtcNow());

@@ -100,6 +100,17 @@ public class TransportTests
         Assert.DoesNotContain("relacionada", enriched.Description);
         Assert.Equal("Mid-Senior level", enriched.SeniorityText);
     }
+    [Fact]
+    public void DetailRecognizesFlexibleOnsiteSchedule()
+    {
+        var job = new JobPosting("linkedin:12345", new("https://www.linkedin.com/jobs/view/12345/"), "Engenheiro(a) de Software Júnior", "Empresa Exemplo", "São Paulo, São Paulo, Brazil", "BR", WorkMode.Unknown, null, null, DateTimeOffset.UtcNow, "");
+        var html = "<h1 class='top-card-layout__title'>Engenheiro(a) de Software Júnior</h1><div class='description__text'>Conhecimento em C#. Modelo presencial com flexibilidade (2x por semana no escritório) em São Paulo/SP.</div>";
+        var result = new LinkedInDetailParser().Parse(html, job);
+        Assert.Equal(SourceStatus.Success, result.Status);
+        var enriched = Assert.Single(result.Jobs);
+        Assert.Equal(WorkMode.Hybrid, enriched.Mode);
+        Assert.Equal(MatchDecision.Include, new JobFilter().Evaluate(enriched).Decision);
+    }
 }
 
 public sealed class StubHttpHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler

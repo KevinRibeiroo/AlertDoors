@@ -9,7 +9,7 @@ public sealed class BotRunner(IJobSource source, IStateStore state, JobFilter fi
     public static IReadOnlyList<SearchRequest> Requests(DateTimeOffset now) =>
         (from word in new[] { ".NET", "C#", "ASP.NET" }
          from mode in new[] { WorkMode.Remote, WorkMode.Hybrid, WorkMode.Onsite }
-         select new SearchRequest(word, mode == WorkMode.Remote ? "Brazil" : "São Paulo, São Paulo, Brazil", mode, now.AddDays(-1), 2)).ToArray();
+         select new SearchRequest(word, mode == WorkMode.Remote ? "Brazil" : "São Paulo, São Paulo, Brazil", mode, now.AddDays(-1), 3)).ToArray();
     public async Task<int> RunAsync(CancellationToken ct)
     {
         if (notifiers.Count == 0) return 2;

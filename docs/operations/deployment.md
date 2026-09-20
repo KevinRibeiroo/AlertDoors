@@ -1,6 +1,6 @@
 # Implantação no GCP
 
-Estado atual: infraestrutura e Cloud Run Job implantados em São Paulo, com Discord configurado e os dois agendamentos pausados. A coleta manual funcionou, mas não encontrou vaga elegível na amostra limitada; houve apenas uma mensagem explícita de teste do webhook. Consulte [aceite](acceptance.md) para as verificações realizadas e pendentes.
+Estado atual: infraestrutura e Cloud Run Job implantados em São Paulo, com Discord configurado e um agendamento horário ativo. Uma execução manual da imagem atual enviou quatro vagas ao Discord; o disparo manual pelo Scheduler concluiu sem duplicar essa janela. A primeira execução automática no horário planejado ainda precisa ser observada. Consulte [aceite](acceptance.md) para as verificações realizadas e pendentes.
 
 ## Preparação
 
@@ -79,19 +79,18 @@ Na configuração local, habilite o canal escolhido e informe números de versã
 
 Troque `job_args` para `["run"]`, mantendo `schedules_enabled=false`, revise/aplique o plano e execute manualmente. Confirme conteúdo e entrega no destino. A primeira execução pode trazer até 20 vagas por canal; as demais ficam pendentes. Ausência de vagas elegíveis não comprova o canal: nesse caso valide o destino com uma mensagem explicitamente de teste antes de ativar.
 
-Execute em outra janela de 40 minutos e verifique que vagas já confirmadas não reaparecem. Uma repetição ignorada na mesma janela só valida o controle de execução. O Firestore guarda entregas por canal, e uma falha em e-mail não desfaz um envio confirmado no Discord. Uma queda entre envio externo e confirmação no banco pode gerar duplicata.
+Execute em outra janela horária e verifique que vagas já confirmadas não reaparecem. Uma repetição ignorada na mesma janela só valida o controle de execução. O Firestore guarda entregas por canal, e uma falha em e-mail não desfaz um envio confirmado no Discord. Uma queda entre envio externo e confirmação no banco pode gerar duplicata.
 
 ## Ativação e operação
 
-Somente após coleta, entrega e persistência confirmadas, altere `schedules_enabled=true`, revise e aplique. São dois agendamentos UTC: `0,40 0-23/2 * * *` e `20 1-23/2 * * *`. Produzem 36 disparos por dia, separados por 40 minutos; atrasos do serviço continuam possíveis. A expressão `*/40 * * * *` não atende esse intervalo.
+Somente após coleta, entrega e persistência confirmadas, altere `schedules_enabled=true`, revise e aplique. O agendamento UTC `0 * * * *` produz 24 disparos planejados por dia, um no início de cada hora; atrasos do serviço continuam possíveis.
 
 Verifique as três primeiras execuções planejadas e registre seus resultados. O Cloud Run usa uma tarefa, 1 vCPU, 512 MiB, timeout de 600 segundos e zero retentativas automáticas da tarefa. O aplicativo encerra cada ciclo, com orçamento interno de nove minutos e concessão Firestore de quinze minutos.
 
 Pausar disparos:
 
 ```powershell
-gcloud scheduler jobs pause alertdoors-even --project=$ProjectId --location=$Region
-gcloud scheduler jobs pause alertdoors-odd --project=$ProjectId --location=$Region
+gcloud scheduler jobs pause alertdoors-hourly --project=$ProjectId --location=$Region
 ```
 
 Depois registre `schedules_enabled=false` na configuração local para que o próximo apply não reverta a pausa. Pausar o Scheduler não cancela uma execução já iniciada.
@@ -109,4 +108,4 @@ Para rotacionar credenciais, adicione uma versão no Secret Manager, atualize o 
 
 ## Custos e limites
 
-Em 30 dias são 1.080 execuções. O consumo depende da duração de cada coleta, das franquias disponíveis na conta e de armazenamento, Firestore, segredos, logs e tráfego. Não há garantia de custo zero. Confira [preços Cloud Run](https://cloud.google.com/run/pricing), [Scheduler](https://cloud.google.com/scheduler/pricing), [Firestore](https://cloud.google.com/firestore/pricing) e [Secret Manager](https://cloud.google.com/secret-manager/pricing) antes de autorizar; configure alertas de orçamento. A coleta pública é experimental, limitada por páginas/detalhes e não promete cobertura de todas as vagas.
+Em 30 dias são 720 execuções planejadas. O consumo depende da duração de cada coleta, das franquias disponíveis na conta e de armazenamento, Firestore, segredos, logs e tráfego. Não há garantia de custo zero. Confira [preços Cloud Run](https://cloud.google.com/run/pricing), [Scheduler](https://cloud.google.com/scheduler/pricing), [Firestore](https://cloud.google.com/firestore/pricing) e [Secret Manager](https://cloud.google.com/secret-manager/pricing) antes de autorizar; configure alertas de orçamento. A coleta pública é experimental, limitada por páginas/detalhes e não promete cobertura de todas as vagas.

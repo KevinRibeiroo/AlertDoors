@@ -20,7 +20,8 @@ public sealed class LinkedInDetailParser
             if (heading.Contains("seniority") || heading.Contains("nivel de experiencia"))
                 seniority = LinkedInPageParser.Clean(item.QuerySelector(".description__job-criteria-text")?.TextContent);
         }
-        var relevant = Normalize(title) + " " + string.Join(" ", Regex.Matches(Normalize(description),
+        var normalizedDescription = Normalize(description);
+        var relevant = Normalize(title) + " " + string.Join(" ", Regex.Matches(normalizedDescription,
             @"(?:modalidade|modelo(?: de trabalho)?|regime(?: de trabalho)?|formato|trabalho|atuacao)\s*:\s*(?:100\s*%\s*)?(?:remot[oa]|hibrid[oa]|presencial)")
             .Select(m => m.Value));
         var remote = Regex.IsMatch(relevant, @"\b(remote|remot[oa])\b");
@@ -28,6 +29,8 @@ public sealed class LinkedInDetailParser
         var onsite = Regex.IsMatch(relevant, @"\b(onsite|presencial)\b");
         var count = (remote ? 1 : 0) + (hybrid ? 1 : 0) + (onsite ? 1 : 0);
         var mode = count != 1 ? WorkMode.Unknown : remote ? WorkMode.Remote : hybrid ? WorkMode.Hybrid : WorkMode.Onsite;
+        if (count == 0 && Regex.IsMatch(normalizedDescription, @"(?<!\w)[1-4]\s*x\s+por\s+semana\s+no\s+escritorio(?!\w)"))
+            mode = WorkMode.Hybrid;
         return new(SourceStatus.Success, [job with { Title = title, Description = description, SeniorityText = seniority, Mode = mode }]);
     }
     internal static string Normalize(string value) => new string(value.Normalize(NormalizationForm.FormD)

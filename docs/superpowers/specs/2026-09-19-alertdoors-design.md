@@ -4,13 +4,13 @@ Status: proposta para revisão; o bot ainda não foi implementado nem ativado.
 
 ## Objetivo e filtros
 
-Buscar vagas de desenvolvimento .NET no LinkedIn a cada 40 minutos e notificar novidades por Discord, e-mail ou ambos.
+Buscar vagas de desenvolvimento .NET no LinkedIn a cada hora e notificar novidades por Discord, e-mail ou ambos.
 
 Confirmado pelo usuário:
 - Senioridade: júnior e pleno.
 - Modalidades: remoto; presencial e híbrido em São Paulo–SP.
 - Fonte inicial: LinkedIn.
-- Intervalo: 40 minutos.
+- Intervalo: 1 hora.
 - A operação não deve depender do computador do usuário; Cloud Run é o destino provável indicado por ele.
 
 Premissas configuráveis desta proposta:
@@ -31,12 +31,12 @@ Recomendação após comparar as opções do GCP: **Cloud Run Jobs + Cloud Sched
 
 Dimensionamento inicial proposto: 1 vCPU e 512 MiB, ajustáveis após medição. Região escolhida: `southamerica-east1` (São Paulo), mantendo o Firestore regional próximo ao processamento e os dados na América do Sul. A região de hospedagem não altera os filtros das vagas.
 
-Referência de custo, sem promessa de gratuidade: em 30 dias são 1.080 execuções. Se cada execução inteira consumir até um minuto, incluindo inicialização, a cobrança mínima de um minuto por execução equivale a 64.800 vCPU-segundos e 32.400 GiB-segundos com o dimensionamento acima. Os limites e preços publicados para `southamerica-east1`, a conta de faturamento e os demais serviços devem ser conferidos antes da ativação. Execuções mais longas ou outros usos da conta alteram esse resultado. Scheduler oferece três agendamentos gratuitos por conta de faturamento; esta proposta usa dois. Fora da franquia, o preço publicado pode gerar cobrança. Firestore, segredos, armazenamento das imagens, builds, logs, tráfego e o provedor de e-mail têm consumo próprio e devem entrar na verificação de custo antes da ativação.
+Referência de consumo, sem promessa de gratuidade: em 30 dias são 720 execuções planejadas. Se cada execução inteira consumir até um minuto, incluindo inicialização, a cobrança mínima de um minuto por execução equivale a 43.200 vCPU-segundos e 21.600 GiB-segundos com o dimensionamento acima. Os limites e preços publicados para `southamerica-east1`, a conta de faturamento e os demais serviços devem ser conferidos periodicamente. Execuções mais longas ou outros usos da conta alteram esse resultado. A implantação usa um agendamento do Scheduler. Firestore, segredos, armazenamento das imagens, builds, logs, tráfego e o provedor de e-mail têm consumo próprio.
 
 - **Cloud Run Jobs:** container .NET 10, uma tarefa por execução, paralelismo 1, timeout inicial de 10 minutos e sem retentativa automática da tarefa. Tentativas curtas de operações transitórias ficam no aplicativo; pendências persistidas podem ser retomadas no próximo ciclo.
-- **Cloud Scheduler:** dois agendamentos em UTC para o mesmo job: `0,40 0-23/2 * * *` e `20 1-23/2 * * *`. Juntos produzem 00:00, 00:40, 01:20, 02:00, 02:40 etc., com 36 disparos planejados por dia. Não usar `*/40 * * * *`, que alterna intervalos de 40 e 20 minutos. O início efetivo pode sofrer atraso do provedor; não se trata de uma garantia de tempo real.
+- **Cloud Scheduler:** um agendamento em UTC para o job: `0 * * * *`. Produz 24 disparos planejados por dia, no início de cada hora. O início efetivo pode sofrer atraso do provedor; não se trata de uma garantia de tempo real.
 - **Firestore:** histórico de vagas, entregas por canal e controle de execução compartilhado. Não depender do disco do container para persistência. A primeira versão usará Firestore também no desenvolvimento, com emulador para testes; não manter dois bancos diferentes.
-- **Controle de concorrência:** aquisição transacional de uma concessão temporária com identificador do proprietário e expiração de 15 minutos, maior que o timeout do job. Registrar também as janelas de 40 minutos já concluídas. Disparos duplicados não devem executar uma janela concluída; execuções concorrentes devem sair sem enviar. Uma concessão abandonada expira e permite recuperação. Operações de envio ficam fora das transações, pois transações podem ser repetidas.
+- **Controle de concorrência:** aquisição transacional de uma concessão temporária com identificador do proprietário e expiração de 15 minutos, maior que o timeout do job. Registrar também as janelas horárias já concluídas. Disparos duplicados não devem executar uma janela concluída; execuções concorrentes devem sair sem enviar. Uma concessão abandonada expira e permite recuperação. Operações de envio ficam fora das transações, pois transações podem ser repetidas.
 - **Secret Manager:** webhook do Discord e credenciais SMTP. E-mail usará TLS na porta compatível com o provedor, normalmente 465 ou 587, com validação no ambiente de destino.
 - **IAM:** identidade dedicada para o Scheduler invocar o job e outra para o aplicativo acessar Firestore e somente os segredos necessários, sem arquivos de chave de conta de serviço dentro da imagem.
 - **Observabilidade:** logs estruturados no Cloud Logging, contagem de vagas e entregas por execução e código de saída de falha quando a coleta ou entrega falhar. Sucesso do disparo pelo Scheduler não significa sucesso da execução do bot.
@@ -48,7 +48,7 @@ Essa estrutura mantém o processamento em uma aplicação de console portável, 
 
 1. **Coletor experimental das páginas públicas do LinkedIn (proposta inicial).** Permite tentar consultas no intervalo solicitado sem credenciais da conta. Depende da disponibilidade das páginas e da estrutura do HTML; sua viabilidade precisa ser comprovada antes de apresentar a integração como funcional. Não há garantia de cobertura completa ou de disponibilidade contínua.
 2. **Provedor externo de dados de vagas.** Pode oferecer um contrato de API mais estável para o bot, mas exige escolher fornecedor, verificar cobertura e custos e configurar uma chave. Não será contratado nesta etapa.
-3. **Processar os alertas recebidos do LinkedIn.** Aproveita os e-mails de alerta, mas não satisfaz a descoberta a cada 40 minutos: a frequência nativa documentada é diária ou semanal. Não é a opção proposta.
+3. **Processar os alertas recebidos do LinkedIn.** Aproveita os e-mails de alerta, mas não satisfaz a descoberta a cada hora: a frequência nativa documentada é diária ou semanal. Não é a opção proposta.
 
 A documentação oficial não lista busca geral de vagas entre as permissões abertas. Não será inventada uma integração oficial de busca. A aplicação terá uma interface de fonte para permitir substituição do coletor sem reescrever as notificações.
 
@@ -69,11 +69,11 @@ Referências consultadas em 19/09/2026:
 1. Ao receber um disparo, validar configuração, identificar a janela de execução e adquirir a concessão no Firestore antes de consultar a fonte.
 2. Consultar separadamente vagas remotas no Brasil e vagas presenciais/híbridas na cidade de São Paulo. Buscar variações de .NET, C# e ASP.NET.
 3. Normalizar os resultados: ID da fonte, URL canônica, título, empresa, local, modalidade, senioridade e data de publicação, quando disponíveis.
-4. Aplicar os filtros. Exigir tecnologia .NET/C#/ASP.NET e cargo de desenvolvedor ou engenheiro de software no título ou na descrição. Usar senioridade explícita no título ou nos dados disponíveis; não equiparar automaticamente a categoria ampla “mid-senior” a pleno. Aceitar títulos mistos como “Pleno/Sênior” quando incluírem júnior/pleno; excluir sênior isolado, liderança e estágio explícitos. Se faltar evidência suficiente de senioridade, localização ou modalidade, contabilizar o resultado como indeterminado e não enviar como correspondência confirmada.
+4. Aplicar os filtros. Exigir tecnologia .NET/C#/ASP.NET no título ou na descrição, permitindo outras stacks na mesma vaga. Aceitar desenvolvedor, programador, engenheiro de software e analista de sistemas/desenvolvimento; aceitar também “analista .NET” e “engenheiro .NET” no título. Usar senioridade explícita no título ou nos dados disponíveis; não equiparar automaticamente a categoria ampla “mid-senior” a pleno. Aceitar títulos mistos como “Pleno/Sênior” quando incluírem júnior/pleno; excluir sênior isolado, liderança e estágio explícitos. Vagas sem senioridade ou modalidade identificável geram alerta com esses campos marcados para confirmação quando o cargo, a tecnologia e a localização permitida têm evidência. Localização ausente ou conflitante permanece indeterminada e não gera alerta.
 5. Registrar vagas e entregas pendentes no Firestore antes do envio.
 6. Enviar um resumo por canal habilitado com título, empresa, localização/modalidade e link. Incluir salário e data apenas quando fornecidos pela fonte.
 7. Registrar sucesso individual por canal. Falha no e-mail não deve repetir um envio já confirmado no Discord.
-8. Registrar o resultado da execução, liberar a concessão pertencente à execução e encerrar o processo. O próximo disparo vem do Cloud Scheduler. Não manter o container aguardando 40 minutos.
+8. Registrar o resultado da execução, liberar a concessão pertencente à execução e encerrar o processo. O próximo disparo vem do Cloud Scheduler. Não manter o container aguardando uma hora.
 
 Na primeira execução, usar resultados das últimas 24 horas, quando a fonte oferecer esse filtro, e limitar o resumo a 20 vagas. Não marcar vagas omitidas pelo limite como entregues. Nos próximos ciclos, usar uma janela sobreposta de consulta e deduplicar por ID; o agendamento não garante que a fonte já tenha disponibilizado toda vaga publicada no período.
 
@@ -102,7 +102,7 @@ Na primeira execução, usar resultados das últimas 24 horas, quando a fonte of
 - Testes de filtros: cargo, júnior/pleno, título misto com sênior, exclusão de sênior isolado, cidade de São Paulo, remoto Brasil e campos ausentes.
 - Testes de interpretação do HTML com exemplos locais, inclusive páginas de bloqueio.
 - Testes de persistência e entregas independentes por canal, incluindo falha e reinício.
-- Verificar os agendamentos por pelo menos 48 horas simuladas, inclusive a virada de dia, confirmando intervalos de 40 minutos.
+- Verificar o agendamento por pelo menos 48 horas simuladas, inclusive a virada de dia, confirmando intervalos de 60 minutos.
 - Testes de concorrência, concessão abandonada, disparo duplicado, cancelamento e limites de tentativas; usar o emulador Firestore para validar transações e persistência.
 - Modo de consulta única sem envio para validar resultados reais. Modo de demonstração com dados fictícios explicitamente identificados, separado do coletor real.
 - Compilar, executar os testes e verificar a integração real antes de afirmar que a coleta funciona.
@@ -111,4 +111,4 @@ Na primeira execução, usar resultados das últimas 24 horas, quando a fonte of
 
 ## Critério de conclusão
 
-O código deve consultar uma fonte real validada, aplicar os filtros acordados, persistir resultados fora do container e enviar novidades nos canais configurados. A entrega inclui os arquivos para execução no Cloud Run Jobs com disparos planejados a cada 40 minutos pelo Cloud Scheduler. Código compilado, imagem construída ou demonstração com dados fictícios, isoladamente, não significa bot em operação. A ativação na nuvem depende de projeto GCP, permissões, faturamento quando exigido e destinos configurados. Até esses dados estarem disponíveis, a entrega deve ser descrita como preparada para implantação, sem afirmar que já está hospedada ou enviando alertas.
+O código deve consultar uma fonte real validada, aplicar os filtros acordados, persistir resultados fora do container e enviar novidades nos canais configurados. A entrega inclui os arquivos para execução no Cloud Run Jobs com disparos planejados a cada hora pelo Cloud Scheduler. Código compilado, imagem construída ou demonstração com dados fictícios, isoladamente, não significa bot em operação. A ativação na nuvem depende de projeto GCP, permissões, faturamento quando exigido e destinos configurados. A execução manual de produção e o agendamento ativo devem ser verificados separadamente.
