@@ -4,7 +4,7 @@ variable "project_id" {
 }
 variable "region" {
   type    = string
-  default = "us-central1"
+  default = "southamerica-east1"
 }
 variable "deploy_job" {
   type        = bool

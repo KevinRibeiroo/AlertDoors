@@ -36,6 +36,23 @@ public class NotificationTests
         Assert.Empty(payload.RootElement.GetProperty("allowed_mentions").GetProperty("parse").EnumerateArray());
     }
     [Fact]
+    public async Task IdentifiesClientWhenSendingDiscordNotification()
+    {
+        using var client = new HttpClient(new StubHttpHandler((request, _) =>
+        {
+            var identified = request.Headers.UserAgent.Any(product => product.Product?.Name == "AlertDoors");
+            return Task.FromResult(identified
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"id\":\"test-message\"}") }
+                : new HttpResponseMessage(HttpStatusCode.Forbidden));
+        }));
+        var notifier = new DiscordNotifier(client, FakeWebhook, TimeProvider.System);
+        var batch = new NotificationBatch("x", Channel.Discord, [FilterTests.Sample()], "x", "x");
+
+        var receipt = await notifier.SendAsync(batch, default);
+
+        Assert.Equal("test-message", receipt.ProviderId);
+    }
+    [Fact]
     public async Task LongRateLimitLeavesDeliveryUnconfirmed()
     {
         var calls = 0;

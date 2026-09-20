@@ -15,7 +15,8 @@ public sealed class LinkedInPageParser
         var invalid = false;
         foreach (var card in cards)
         {
-            var href = card.QuerySelector(".base-card__full-link")?.GetAttribute("href");
+            var href = card.QuerySelector(".base-card__full-link")?.GetAttribute("href")
+                ?? card.GetAttribute("href");
             var id = Regex.Match(card.GetAttribute("data-entity-urn") ?? "", @"^urn:li:jobPosting:(\d+)$").Groups[1].Value;
             var title = Clean(card.QuerySelector(".base-search-card__title")?.TextContent);
             var company = Clean(card.QuerySelector(".base-search-card__subtitle")?.TextContent);

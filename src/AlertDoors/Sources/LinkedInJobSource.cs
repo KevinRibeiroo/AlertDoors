@@ -6,6 +6,10 @@ public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock
     private int detailRequests;
     public async Task<SourceResult> SearchAsync(SearchRequest request, CancellationToken ct)
     {
+        // Spread the cycle-wide detail budget over the nine query variants so
+        // the first result page cannot starve hybrid/onsite searches.
+        var perSearchBudget = maxDetails >= 9 ? Math.Max(1, maxDetails / 9) : maxDetails;
+        var detailsThisSearch = 0;
         var found = new Dictionary<string, JobPosting>();
         var status = SourceStatus.Success;
         DateTimeOffset? retryAt = null;
@@ -27,8 +31,9 @@ public sealed class LinkedInJobSource(BoundedHttpClient http, TimeProvider clock
         foreach (var job in found.Values.OrderByDescending(j => System.Text.RegularExpressions.Regex.IsMatch(j.Title, @"(?i)\b(j[uú]nior|jr|pleno|pl|mid.level)\b")).ToArray())
         {
             if (details.TryGetValue(job.Id, out var cached)) { found[job.Id] = cached; continue; }
-            if (status != SourceStatus.Success || detailRequests >= maxDetails) { truncated = true; continue; }
+            if (status != SourceStatus.Success || detailRequests >= maxDetails || detailsThisSearch >= perSearchBudget) { truncated = true; continue; }
             detailRequests++;
+            detailsThisSearch++;
             var response = await http.GetAsync(job.Url, ct);
             if (response.Status != SourceStatus.Success) { status = response.Status; retryAt = response.RetryAt; continue; }
             var parsed = new LinkedInDetailParser().Parse(response.Html, job);

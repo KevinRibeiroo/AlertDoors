@@ -1,12 +1,12 @@
 # Implantação no GCP
 
-Estado atual: aplicação validada localmente; implantação e alertas reais ainda não ativados. Consulte [aceite](acceptance.md) para distinguir testes locais de verificações na nuvem.
+Estado atual: infraestrutura e Cloud Run Job implantados em São Paulo, com Discord configurado e os dois agendamentos pausados. A coleta manual funcionou, mas não encontrou vaga elegível na amostra limitada; houve apenas uma mensagem explícita de teste do webhook. Consulte [aceite](acceptance.md) para as verificações realizadas e pendentes.
 
 ## Preparação
 
 Trabalhe em `develop`. Use SDK .NET 10, Docker com containers Linux, Google Cloud CLI e Terraform >= 1.9 e < 2. Não é necessário manter o computador ligado após a implantação. O desenvolvimento também pode usar as CLIs oficiais em containers.
 
-Defina `$ProjectId` e `$Region` localmente. A região proposta é `us-central1`. Confirme faturamento, acesso ao projeto e localização de um eventual banco existente. Autentique com `gcloud auth login` e `gcloud auth application-default login` quando necessário; não crie chaves de conta de serviço para o bot.
+Defina `$ProjectId` e `$Region` localmente. A região proposta é `southamerica-east1` (São Paulo). Confirme que o projeto está vinculado à sua conta de faturamento do Free Tier/Free Trial e confirme a localização de um eventual banco existente. Vincular faturamento não remove a cota gratuita: dentro dos limites publicados, não há cobrança; somente excedentes, produtos sem gratuidade ou créditos esgotados geram custo. Autentique com `gcloud auth login` e `gcloud auth application-default login` quando necessário; não crie chaves de conta de serviço para o bot.
 
 ```powershell
 gcloud projects describe $ProjectId
@@ -22,7 +22,7 @@ dotnet test AlertDoors.slnx --no-restore
 docker run --rm alertdoors:local demo
 ```
 
-Se uma API estiver desativada, a falha de listagem não prova ausência de recursos. Após habilitação autorizada, repita o inventário antes de criar o banco. Não substitua um banco existente: confirme modo, edição e região, ajuste a configuração e importe o recurso para o estado Terraform quando apropriado.
+Se uma API estiver desativada, a falha de listagem não prova ausência de recursos e não significa que o projeto esteja sendo cobrado. Após habilitação autorizada, repita o inventário antes de criar o banco. Não substitua um banco existente: confirme modo, edição e região, ajuste a configuração e importe o recurso para o estado Terraform quando apropriado.
 
 Copie `infra/terraform/terraform.tfvars.example` para `infra/terraform/deployment.local.tfvars`, ignorado pelo Git. Preencha projeto e região. Deixe `deploy_job=false`, ambos os canais desligados e `schedules_enabled=false`.
 
@@ -33,7 +33,7 @@ terraform -chdir=infra/terraform validate
 terraform -chdir=infra/terraform plan '-var-file=deployment.local.tfvars' '-out=bootstrap.tfplan'
 ```
 
-Revise o plano antes de autorizar custos. O bootstrap declara seis APIs, um registro de imagens, um banco Firestore Native Standard, um índice de entregas, duas contas de serviço, acesso do runtime ao Firestore e sete recipientes de segredos sem valores. Não cria o job nem os agendamentos enquanto `deploy_job=false`. O banco e os segredos têm proteção contra destruição.
+Revise o plano antes de ativar recursos. O bootstrap declara seis APIs, um registro de imagens, um banco Firestore Native Standard, um índice de entregas, duas contas de serviço, acesso do runtime ao Firestore e sete recipientes de segredos sem valores. Não cria o job nem os agendamentos enquanto `deploy_job=false`. O banco e os segredos têm proteção contra destruição. A cota gratuita depende dos limites atuais do Google Cloud; configure um alerta de orçamento se sua conta permitir.
 
 O estado Terraform é local e ignorado. Guarde uma cópia privada protegida; não o envie ao GitHub. Antes de operações colaborativas, configure um backend privado com controle de acesso e bloqueio de estado. Nunca aplique o mesmo projeto a partir de estados independentes.
 

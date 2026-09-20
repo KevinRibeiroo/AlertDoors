@@ -39,4 +39,8 @@ public class FilterTests
     public void MissingModeIsUnknown() => Assert.Equal(MatchDecision.Unknown, new JobFilter().Evaluate(Sample() with { Mode = WorkMode.Unknown }).Decision);
     [Fact]
     public void RemoteUsRestrictionOverridesBrazilListing() => Assert.Equal(MatchDecision.Exclude, new JobFilter().Evaluate(Sample() with { Mode = WorkMode.Remote, Description = "Remote: US only. ASP.NET" }).Decision);
+    [Theory]
+    [InlineData("Remote: Canada only.")]
+    [InlineData("Must be based in Portugal.")]
+    public void RemoteOtherCountryRestrictionOverridesBrazilListing(string description) => Assert.Equal(MatchDecision.Exclude, new JobFilter().Evaluate(Sample() with { Mode = WorkMode.Remote, Description = description }).Decision);
 }

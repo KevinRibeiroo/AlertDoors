@@ -23,7 +23,7 @@ public sealed class JobFilter
         if (job.Mode == WorkMode.Unknown) return new(MatchDecision.Unknown, "work_mode_missing");
         if (job.Mode == WorkMode.Remote)
         {
-            if (Regex.IsMatch(description, @"\b(us only|usa only|united states only|somente (?:nos )?eua|must (?:reside|be based) in (?:the )?(?:us|united states))\b"))
+            if (Regex.IsMatch(description, @"\b(us only|usa only|united states only|canada only|canada apenas|portugal only|europe only|somente (?:nos )?eua|must (?:reside|be based) in (?:the )?(?:us|united states|canada|portugal))\b"))
                 return new(MatchDecision.Exclude, "remote_country_restriction");
             if (job.CountryCode is null) return new(MatchDecision.Unknown, "remote_country_missing");
             if (!job.CountryCode.Equals("BR", StringComparison.OrdinalIgnoreCase)) return new(MatchDecision.Exclude, "outside_country");

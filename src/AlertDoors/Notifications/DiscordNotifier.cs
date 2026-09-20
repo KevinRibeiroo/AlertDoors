@@ -23,7 +23,12 @@ public sealed class DiscordNotifier : INotifier
         if (batch.Channel != Channel || batch.Body.Length > 1900) throw new ArgumentException("Invalid Discord batch.");
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            using var response = await client.PostAsJsonAsync(webhook, new { content = batch.Body, allowed_mentions = new { parse = Array.Empty<string>() } }, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Post, webhook)
+            {
+                Content = JsonContent.Create(new { content = batch.Body, allowed_mentions = new { parse = Array.Empty<string>() } })
+            };
+            request.Headers.UserAgent.ParseAdd("AlertDoors/1.0");
+            using var response = await client.SendAsync(request, ct);
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 using var error = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));

@@ -41,6 +41,15 @@ public class SourceTests
     }
 
     [Fact]
+    public void ExtractsCardWhenTheCardItselfIsTheJobLink()
+    {
+        var html = "<a class='job-search-card' data-entity-urn='urn:li:jobPosting:12345' href='https://br.linkedin.com/jobs/view/developer-12345'><h3 class='base-search-card__title'>.NET Pleno</h3><h4 class='base-search-card__subtitle'>Empresa Exemplo</h4></a>";
+        var result = new LinkedInPageParser().Parse(html, Observed);
+        Assert.Equal(SourceStatus.Success, result.Status);
+        Assert.Equal("linkedin:12345", Assert.Single(result.Jobs).Id);
+    }
+
+    [Fact]
     public void DoesNotAcceptOffDomainJobLinks()
     {
         var html = Fixture("linkedin-jobs.html").Replace("br.linkedin.com", "linkedin.com.attacker.test");
